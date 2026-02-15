@@ -170,12 +170,169 @@ def preview_duplicate():
     else:
         preview_label.config(text=f"Предпросмотр (первые 5 строк):\n{preview_text}\n\nБудет дублировано {duplicate_count} раз")
 
+def open_replace_window():
+    """Открывает окно для замены символов."""
+    replace_window = tk.Toplevel(root)
+    replace_window.title("Замена символов")
+    replace_window.geometry("500x300")
+    replace_window.resizable(False, False)
+    
+    # Центрирование окна
+    replace_window.update_idletasks()
+    width = replace_window.winfo_width()
+    height = replace_window.winfo_height()
+    x = (replace_window.winfo_screenwidth() // 2) - (width // 2)
+    y = (replace_window.winfo_screenheight() // 2) - (height // 2)
+    replace_window.geometry(f'{width}x{height}+{x}+{y}')
+    
+    # Инструкция
+    instruction_label = tk.Label(
+        replace_window,
+        text="Введите символы для замены. Каждый символ из первого поля\n"
+             "будет заменен на соответствующий символ из второго поля.\n"
+             "Пример: если ввести 'abc' и 'xyz', то все 'a' заменятся на 'x',\n"
+             "'b' на 'y', 'c' на 'z'.",
+        justify=tk.LEFT,
+        wraplength=450,
+        pady=10
+    )
+    instruction_label.pack(padx=20, pady=(10, 5))
+    
+    # Поле для символов, которые нужно заменить
+    frame1 = tk.Frame(replace_window)
+    frame1.pack(padx=20, pady=10, fill=tk.X)
+    
+    label1 = tk.Label(frame1, text="Символы для замены:", width=20, anchor="w")
+    label1.pack(side=tk.LEFT)
+    
+    replace_from_var = tk.StringVar()
+    entry1 = tk.Entry(frame1, textvariable=replace_from_var, width=30)
+    entry1.pack(side=tk.LEFT, padx=(10, 0))
+    
+    # Поле для символов, на которые нужно заменить
+    frame2 = tk.Frame(replace_window)
+    frame2.pack(padx=20, pady=10, fill=tk.X)
+    
+    label2 = tk.Label(frame2, text="Заменить на:", width=20, anchor="w")
+    label2.pack(side=tk.LEFT)
+    
+    replace_to_var = tk.StringVar()
+    entry2 = tk.Entry(frame2, textvariable=replace_to_var, width=30)
+    entry2.pack(side=tk.LEFT, padx=(10, 0))
+    
+    # Пример
+    example_label = tk.Label(
+        replace_window,
+        text="Пример: 'abc' → 'xyz' заменит все 'a' на 'x', 'b' на 'y', 'c' на 'z'",
+        font=("Arial", 9),
+        fg="gray",
+        justify=tk.LEFT,
+        wraplength=450
+    )
+    example_label.pack(padx=20, pady=5)
+    
+    # Кнопки
+    button_frame = tk.Frame(replace_window)
+    button_frame.pack(padx=20, pady=20)
+    
+    def apply_replace():
+        """Применить замену символов."""
+        from_chars = replace_from_var.get()
+        to_chars = replace_to_var.get()
+        
+        if not from_chars:
+            messagebox.showwarning("Предупреждение", "Введите символы для замены")
+            return
+        
+        if len(from_chars) != len(to_chars):
+            messagebox.showwarning("Предупреждение", 
+                                 f"Количество символов должно совпадать!\n"
+                                 f"Символов для замены: {len(from_chars)}\n"
+                                 f"Символов для замены на: {len(to_chars)}")
+            return
+        
+        # Получаем текущий текст
+        current_text = text_widget.get("1.0", tk.END).rstrip('\n')
+        if not current_text:
+            messagebox.showwarning("Предупреждение", "Нет текста для обработки")
+            return
+        
+        # Выполняем замену
+        translation_table = str.maketrans(from_chars, to_chars)
+        new_text = current_text.translate(translation_table)
+        
+        # Обновляем текст в поле
+        text_widget.delete("1.0", tk.END)
+        text_widget.insert("1.0", new_text)
+        
+        # Показываем статистику
+        changes_count = 0
+        for char in current_text:
+            if char in from_chars:
+                changes_count += 1
+        
+        # Исправленная строка - считаем количество строк правильно
+        line_count = new_text.count('\n') + 1
+        status_label.config(text=f"Строк: {line_count} (заменено {changes_count} символов)")
+        messagebox.showinfo("Успех", f"Заменено {changes_count} символов")
+        replace_window.destroy()
+    
+    def preview_replace():
+        """Предпросмотр замены."""
+        from_chars = replace_from_var.get()
+        to_chars = replace_to_var.get()
+        
+        if not from_chars:
+            messagebox.showwarning("Предупреждение", "Введите символы для замены")
+            return
+        
+        if len(from_chars) != len(to_chars):
+            messagebox.showwarning("Предупреждение", 
+                                 f"Количество символов должно совпадать!\n"
+                                 f"Символов для замены: {len(from_chars)}\n"
+                                 f"Символов для замены на: {len(to_chars)}")
+            return
+        
+        # Получаем первые 5 строк текущего текста
+        current_text = text_widget.get("1.0", tk.END).rstrip('\n')
+        if not current_text:
+            messagebox.showwarning("Предупреждение", "Нет текста для обработки")
+            return
+        
+        lines = current_text.split('\n')[:5]
+        preview_lines = []
+        
+        translation_table = str.maketrans(from_chars, to_chars)
+        
+        for i, line in enumerate(lines):
+            new_line = line.translate(translation_table)
+            if line != new_line:
+                preview_lines.append(f"Строка {i+1}: {line} → {new_line}")
+            else:
+                preview_lines.append(f"Строка {i+1}: {line} (без изменений)")
+        
+        # Показываем предпросмотр
+        preview_text = "\n".join(preview_lines)
+        if len(lines) < 5:
+            preview_label.config(text=f"Предпросмотр замены (все строки):\n{preview_text}")
+        else:
+            preview_label.config(text=f"Предпросмотр замены (первые 5 строк):\n{preview_text}")
+    
+    apply_btn = tk.Button(button_frame, text="Применить замену", command=apply_replace, width=20)
+    apply_btn.pack(side=tk.LEFT, padx=(0, 10))
+    
+    preview_btn = tk.Button(button_frame, text="Предпросмотр", command=preview_replace, width=15)
+    preview_btn.pack(side=tk.LEFT, padx=(0, 10))
+    
+    cancel_btn = tk.Button(button_frame, text="Отмена", command=replace_window.destroy, width=15)
+    cancel_btn.pack(side=tk.LEFT)
+
 # Глобальные переменные
 current_file_path = None
 
 # --- GUI ---
 root = tk.Tk()
-root.title("Дубликатор текста")
+root.title("Дубликатор текста с заменой символов")
 root.geometry("1000x700")
 
 # Верхняя панель управления
@@ -200,13 +357,17 @@ duplicate_entry.pack(side=tk.LEFT, padx=(5, 0))
 times_label = tk.Label(duplicate_frame, text="раз")
 times_label.pack(side=tk.LEFT, padx=(5, 0))
 
-# Кнопка предпросмотра
-preview_btn = tk.Button(top_frame, text="Предпросмотр", command=preview_duplicate, width=15)
-preview_btn.pack(side=tk.LEFT, padx=(0, 10))
+# Кнопка предпросмотра дублирования
+preview_duplicate_btn = tk.Button(top_frame, text="Предпросмотр", command=preview_duplicate, width=15)
+preview_duplicate_btn.pack(side=tk.LEFT, padx=(0, 10))
 
 # Кнопка дублирования
 duplicate_btn = tk.Button(top_frame, text="Дублировать текст", command=duplicate_text, width=20)
 duplicate_btn.pack(side=tk.LEFT, padx=(0, 10))
+
+# Кнопка замены символов
+replace_btn = tk.Button(top_frame, text="Заменить символы", command=open_replace_window, width=20)
+replace_btn.pack(side=tk.LEFT, padx=(0, 10))
 
 # Кнопка сохранения
 save_btn = tk.Button(top_frame, text="Сохранить результат", command=save_duplicated_text, width=20)
@@ -252,7 +413,7 @@ status_label = tk.Label(status_frame, text="Строк: 0", anchor="w")
 status_label.pack(side=tk.LEFT)
 
 help_label = tk.Label(status_frame,
-                     text="Формат: весь текст будет дублирован указанное количество раз",
+                     text="Формат: дублирование текста и замена символов",
                      anchor="e")
 help_label.pack(side=tk.RIGHT)
 
